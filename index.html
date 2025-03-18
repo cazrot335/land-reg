@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Land Ownership DApp</title>
+
+  <!-- Import ABI and Address -->
+  <script type="module">
+    import { abi, contractAddress } from './contract.js';
+    window.landContractInfo = { abi, contractAddress }; // Make globally accessible
+  </script>
+
+  <!-- Ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+  <!-- Styling -->
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+    h2 { color: #333; }
+    input, button { margin: 5px; padding: 8px; }
+    .section { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  </style>
+</head>
+
+<body>
+
+  <!-- Register Land Section -->
+  <div class="section">
+    <h2>Register Land</h2>
+    <input id="location" placeholder="Location" />
+    <input id="size" placeholder="Size (sqm)" type="number" />
+    <button onclick="registerLand()">Register</button>
+  </div>
+
+  <!-- Transfer Land Section -->
+  <div class="section">
+    <h2>Transfer Land</h2>
+    <input id="transferLandId" placeholder="Land ID" type="number" />
+    <input id="newOwner" placeholder="New Owner Address" />
+    <button onclick="transferLand()">Transfer</button>
+  </div>
+
+  <!-- Get Land Info Section -->
+  <div class="section">
+    <h2>Get Land Info</h2>
+    <input id="getLandId" placeholder="Land ID" type="number" />
+    <button onclick="getLand()">Get Info</button>
+    <pre id="landInfo"></pre>
+  </div>
+
+  <!-- List All Lands Section -->
+  <div class="section">
+    <h2>All Lands</h2>
+    <button onclick="listAllLands()">Refresh List</button>
+    <ul id="landList"></ul>
+  </div>
+
+  <!-- DApp Functionality -->
+  <script type="module">
+    const { abi, contractAddress } = window.landContractInfo;
+
+    let contract, provider, signer;
+
+    async function connectContract() {
+      if (typeof window.ethereum !== 'undefined') {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        contract = new ethers.Contract(contractAddress, abi, signer);
+      } else {
+        alert("MetaMask not found");
+      }
+    }
+
+    // Register Land
+    window.registerLand = async function() {
+      await connectContract();
+      const location = document.getElementById('location').value;
+      const size = document.getElementById('size').value;
+      try {
+        const tx = await contract.registerLand(location, size);
+        await tx.wait();
+        alert("Land Registered!");
+      } catch (e) {
+        alert("Error: " + e.message);
+      }
+    };
+
+    // Transfer Land
+    window.transferLand = async function() {
+      await connectContract();
+      const landId = document.getElementById('transferLandId').value;
+      const newOwner = document.getElementById('newOwner').value;
+      try {
+        const tx = await contract.transferLand(landId, newOwner);
+        await tx.wait();
+        alert("Land Transferred!");
+      } catch (e) {
+        alert("Error: " + e.message);
+      }
+    };
+
+    // Get Land Info
+    window.getLand = async function() {
+      await connectContract();
+      const landId = document.getElementById('getLandId').value;
+      try {
+        const land = await contract.getLand(landId);
+        const info = `
+ID: ${land.id}
+Location: ${land.location}
+Size: ${land.size} sqm
+Owner: ${land.owner}`;
+        document.getElementById('landInfo').innerText = info;
+      } catch (e) {
+        document.getElementById('landInfo').innerText = "Error: " + e.message;
+      }
+    };
+
+    // List All Lands
+    window.listAllLands = async function() {
+      await connectContract();
+      const list = document.getElementById('landList');
+      list.innerHTML = "";
+      try {
+        const nextId = await contract.nextLandId();
+        for (let i = 1; i < nextId; i++) {
+          const land = await contract.getLand(i);
+          const item = document.createElement('li');
+          item.innerText = `ID: ${land.id} | Location: ${land.location} | Size: ${land.size} sqm | Owner: ${land.owner}`;
+          list.appendChild(item);
+        }
+      } catch (e) {
+        list.innerHTML = "Error: " + e.message;
+      }
+    };
+  </script>
+
+</body>
+</html>

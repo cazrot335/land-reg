@@ -1,6 +1,6 @@
 # LandOwnership Smart Contract
 
-This smart contract allows users to **register land** with a location and size, and **transfer ownership** to others. It is deployed and tested on the **Sepolia Testnet**
+This smart contract allows users to **register land** with a location and size, and **transfer ownership** to others. It is deployed and tested on the **Sepolia Testnet**.
 
 
 
